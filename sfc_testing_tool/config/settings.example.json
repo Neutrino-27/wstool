@@ -1,0 +1,19 @@
+{
+  "environment": "QA",
+  "endpoint_url": "http://REPLACE-WITH-QA-HOST/path/service.asmx",
+  "allowed_hosts": ["REPLACE-WITH-QA-HOST"],
+  "forbidden_markers": ["prod"],
+  "host_header": "REPLACE-WITH-HOST-HEADER",
+  "xml_namespace": "REPLACE-WITH-WSDL-NAMESPACE",
+  "soap_action_base": "REPLACE-WITH-SOAPACTION-BASE",
+  "connect_timeout_s": 5,
+  "read_timeout_s": 15,
+  "connect_retries": 1,
+  "verify_tls": true,
+  "log_dir": "logs",
+  "log_level": "INFO",
+  "login_status": "1",
+  "logout_status": "2",
+  "device_check_status": "5",
+  "session_invalid_markers": []
+}

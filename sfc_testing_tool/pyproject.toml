@@ -1,0 +1,16 @@
+[project]
+name = "sfc-testing-tool"
+version = "0.3.0"
+description = "Internal SFC SOAP testing tool (QA only)"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.28"]
+
+[project.optional-dependencies]
+dev = ["pytest", "defusedxml"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
