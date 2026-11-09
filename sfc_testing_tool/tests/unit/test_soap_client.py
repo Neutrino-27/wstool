@@ -9,7 +9,7 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from sfc_tool.infrastructure.exceptions import (
     ConnectFailedError, EnvironmentGuardError, HttpStatusError, ReadTimeoutError,
-    ResponseParseError, SoapFaultError, TransportError)
+    ResponseParseError, SoapFaultError, TlsVerificationError, TransportError)
 from sfc_tool.infrastructure.logging_setup import setup_logging
 from sfc_tool.integration.soap_client import SoapClient
 from .helpers import FAULT, NS, SETTINGS, FakeResponse, FakeSession, soap_ok
@@ -84,6 +84,17 @@ class Client(unittest.TestCase):
             SoapClient(SETTINGS, s).call("M", P)
         self.assertNotIsInstance(cm.exception, ConnectFailedError)
         self.assertEqual(len(s.calls), 1)
+
+    def test_tls_failure_is_actionable_not_retried_and_hides_host(self):
+        s = FakeSession(requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED host=qa-host.invalid"),
+                        FakeResponse(200, soap_ok("M", "x")))
+        with self.assertRaises(TlsVerificationError) as cm:
+            SoapClient(SETTINGS, s).call("M", P)
+        self.assertEqual(len(s.calls), 1)
+        self.assertIn("verify_tls", str(cm.exception))
+        self.assertNotIn("qa-host", str(cm.exception))
+        self.assertIsNone(cm.exception.__cause__)
+        self.assertTrue(cm.exception.__suppress_context__)
 
     def test_secret_never_reaches_log_file(self):
         d = tempfile.mkdtemp()

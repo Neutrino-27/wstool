@@ -28,6 +28,10 @@ class ConnectFailedError(TransportError):
     """Could not establish a connection: the request never reached the server."""
 
 
+class TlsVerificationError(TransportError):
+    """TLS certificate could not be verified (usually a missing corporate CA)."""
+
+
 class ReadTimeoutError(TransportError):
     """Request may have reached the server. Outcome UNKNOWN; never auto-retried."""
 

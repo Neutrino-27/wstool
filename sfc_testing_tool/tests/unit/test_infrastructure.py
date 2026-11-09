@@ -65,6 +65,14 @@ class Settings(unittest.TestCase):
     def test_missing_file(self):
         with self.assertRaises(ConfigurationError): load_settings("nope.json")
 
+    def test_verify_tls_path_must_exist(self):
+        base = {"environment": "QA", "endpoint_url": "https://h.invalid/s", "allowed_hosts": ["h.invalid"],
+                "xml_namespace": "n", "soap_action_base": "n"}
+        with self.assertRaises(ConfigurationError):
+            load_settings(self._write(dict(base, verify_tls="no/such/ca.pem")))
+        pem = self._write({})   # any existing file
+        self.assertEqual(load_settings(self._write(dict(base, verify_tls=pem))).verify_tls, pem)
+
     def test_repr_hides_endpoint(self):
         self.assertNotIn("qa-host", repr(SETTINGS))
 
@@ -90,3 +98,17 @@ class Redaction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Tls(unittest.TestCase):
+    def test_pem_bundle_filtering_and_dedupe(self):
+        import certifi, ssl
+        from sfc_tool.infrastructure.tls import windows_entries_to_pem
+        with open(certifi.where(), encoding="ascii") as fh:
+            first = fh.read().split("-----END CERTIFICATE-----")[0] + "-----END CERTIFICATE-----\n"
+        der = ssl.PEM_cert_to_DER_cert(first[first.index("-----BEGIN"):])
+        entries = [(der, "x509_asn", True), (der, "x509_asn", {"1.3.6.1.5.5.7.3.1"}),   # duplicate
+                   (der + b"x", "x509_asn", {"1.3.6.1.5.5.7.3.4"}),                      # wrong purpose
+                   (der + b"y", "pkcs_7_asn", True)]                                      # wrong encoding
+        out = windows_entries_to_pem(entries)
+        self.assertEqual(out.count("BEGIN CERTIFICATE"), 1)

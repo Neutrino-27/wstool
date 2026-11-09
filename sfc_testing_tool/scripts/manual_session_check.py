@@ -1,4 +1,4 @@
-"""MANUAL check against the QA service: device check (status 5) -> login -> logout.
+r"""MANUAL check against the QA service: device check (status 5) -> login -> logout.
 
 Sends ONLY login/logout traffic (no WTSP_RESULT). Run it yourself, never in CI:
     set PYTHONPATH=src

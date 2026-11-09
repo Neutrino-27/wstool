@@ -10,7 +10,7 @@ import requests
 from ..infrastructure.env_guard import assert_qa_endpoint
 from ..infrastructure.exceptions import (
     ConnectFailedError, HttpStatusError, ReadTimeoutError, ResponseParseError,
-    SoapFaultError, TransportError)
+    SoapFaultError, TlsVerificationError, TransportError)
 from ..infrastructure.logging_setup import redact_params, redact_xml
 from ..infrastructure.settings import Settings
 from .envelope_builder import Params, build_envelope
@@ -50,6 +50,8 @@ class SoapClient:
         assert_qa_endpoint(settings)
         self._s = settings
         self._session = session or requests.Session()
+        if settings.verify_tls is False and settings.endpoint_url.lower().startswith("https"):
+            log.warning("tls_verification_disabled")
 
     def close(self) -> None:
         self._session.close()
@@ -109,14 +111,19 @@ class SoapClient:
                     verify=self._s.verify_tls, allow_redirects=False)
             except requests.ReadTimeout:
                 raise ReadTimeoutError(
-                    "Read timeout: the server may have processed the request.")
+                    "Read timeout: the server may have processed the request.") from None
+            except requests.exceptions.SSLError:
+                # `from None`: the chained traceback would print the endpoint host.
+                raise TlsVerificationError(
+                    "TLS certificate verification failed. Set 'verify_tls' to a CA "
+                    "bundle path (see scripts/export_windows_ca_bundle.py).") from None
             except requests.RequestException as exc:
                 if _failed_before_send(exc):
                     if attempt < attempts:
                         log.warning("soap_connect_retry", extra={"fields": {"attempt": attempt}})
                         continue
-                    raise ConnectFailedError("Could not connect to the web service.")
-                raise TransportError("Network error: %s" % type(exc).__name__)
+                    raise ConnectFailedError("Could not connect to the web service.") from None
+                raise TransportError("Network error: %s" % type(exc).__name__) from None
         raise ConnectFailedError("Could not connect to the web service.")  # pragma: no cover
 
     @staticmethod

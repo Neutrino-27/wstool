@@ -71,6 +71,11 @@ def load_settings(path: str = "") -> Settings:
     if not isinstance(raw["allowed_hosts"], list):
         raise ConfigurationError("allowed_hosts must be a list.")
     try:
-        return Settings(**raw)
+        settings = Settings(**raw)
     except TypeError as exc:
         raise ConfigurationError("Invalid settings: %s" % exc)
+    if isinstance(settings.verify_tls, str) and not os.path.isfile(settings.verify_tls):
+        raise ConfigurationError(
+            "verify_tls CA bundle file not found. Run scripts/export_windows_ca_bundle.py "
+            "or correct the path.")
+    return settings
